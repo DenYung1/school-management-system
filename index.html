@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JIT NIIT Authorized Training Center</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Login Form -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center min-vh-100 bg-white">
+                <div class="login-container p-5" style="width: 100%; max-width: 450px;">
+                    <div class="text-center mb-5">
+                        <h1 class="fw-bold text-primary">JIT NIIT</h1>
+                        <h3 class="text-secondary">School Management System</h3>
+                    </div>
+                    
+                    <!-- Login Header -->
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold">Sign In</h4>
+                        <p class="text-muted small">Please enter your credentials to access the system</p>
+                    </div>
+                    
+                    <!-- Alert Messages -->
+                    <div id="loginError" class="alert alert-danger d-none" role="alert">
+                        Invalid email or password. Please try again.
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <form id="loginForm">
+                        <div class="mb-4">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
+                        
+                        <div class="text-center mt-3">
+                            <p class="text-muted">OR</p>
+                        </div>
+                        
+                        <button type="button" id="googleLoginBtn" class="btn btn-light w-100 py-2 d-flex align-items-center justify-content-center border shadow-sm">
+                            <img src="img/google-logo.svg" alt="G" width="20" height="20" class="me-2" onerror="this.onerror=null; this.innerHTML='G'; this.classList.add('bg-primary', 'text-white', 'rounded-circle', 'p-1', 'me-2')">
+                            <span>Sign in with Google</span>
+                        </button>
+                        
+                        <div class="text-center mt-4">
+                            <a href="#" id="forgotPassword" class="text-decoration-none">Forgot password?</a>
+                        </div>
+                        <div class="text-center mt-2">
+                            <p class="text-muted small">Need an account? Please contact your administrator.</p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Right Side Banner -->
+            <div class="col-lg-6 d-none d-lg-block bg-primary min-vh-100">
+                <div class="d-flex flex-column align-items-center h-100 text-white p-5 pt-5 mt-5">
+                    <h2 class="fw-bold mb-4">Welcome to JIT NIIT Authorized Training Center</h2>
+                    <p class="lead text-center mb-5">Manage your educational institution with our comprehensive school management system.</p>
+                    <div class="features">
+                        <div class="feature d-flex align-items-center mb-4">
+                            <i class="fas fa-user-graduate fa-2x me-3"></i>
+                            <span>Student Registration</span>
+                        </div>
+                        <div class="feature d-flex align-items-center mb-4">
+                            <i class="fas fa-book fa-2x me-3"></i>
+                            <span>Course Management</span>
+                        </div>
+                        <div class="feature d-flex align-items-center mb-4">
+                            <i class="fas fa-clipboard-check fa-2x me-3"></i>
+                            <span>Attendance Tracking</span>
+                        </div>
+                        <div class="feature d-flex align-items-center">
+                            <i class="fas fa-chart-line fa-2x me-3"></i>
+                            <span>Admin Dashboard</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+    <!-- Custom JS -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

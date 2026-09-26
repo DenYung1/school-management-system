@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Setup - NIIT School Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0"><i class="fas fa-user-shield me-2"></i>Admin Setup Tool</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This tool allows you to set up an administrator account for your School Management System.
+                            <strong>Use this tool only once during initial setup.</strong>
+                        </div>
+
+                        <div id="loginSection">
+                            <h4 class="mb-4">Step 1: Login with your existing account</h4>
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </form>
+                        </div>
+
+                        <div id="adminSetupSection" class="d-none">
+                            <h4 class="mb-4">Step 2: Make this account an administrator</h4>
+                            <div class="mb-3">
+                                <p><strong>User:</strong> <span id="userEmail"></span></p>
+                            </div>
+                            <button id="makeAdminBtn" class="btn btn-success">
+                                <i class="fas fa-user-shield me-2"></i>Make Administrator
+                            </button>
+                        </div>
+
+                        <!-- Success and Error Messages -->
+                        <div id="errorMessage" class="alert alert-danger mt-4 d-none"></div>
+                        <div id="successMessage" class="alert alert-success mt-4 d-none"></div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="index.html" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.min.js"></script>
+    <!-- Custom JS -->
+    <script src="js/config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize login form
+            const loginForm = document.getElementById('loginForm');
+            const loginSection = document.getElementById('loginSection');
+            const adminSetupSection = document.getElementById('adminSetupSection');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const userEmailSpan = document.getElementById('userEmail');
+            const makeAdminBtn = document.getElementById('makeAdminBtn');
+            
+            let currentUser = null;
+
+            // Handle login form submission
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Clear previous messages
+                errorMessage.classList.add('d-none');
+                successMessage.classList.add('d-none');
+                
+                try {
+                    // Show loading state
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+                    submitBtn.disabled = true;
+                    
+                    // Sign in with Supabase
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    // Store current user
+                    currentUser = data.user;
+                    
+                    // Show admin setup section
+                    loginSection.classList.add('d-none');
+                    adminSetupSection.classList.remove('d-none');
+                    userEmailSpan.textContent = currentUser.email;
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    
+                    // Show error message
+                    errorMessage.textContent = error.message;
+                    errorMessage.classList.remove('d-none');
+                } finally {
+                    // Reset button
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = 'Login';
+                    submitBtn.disabled = false;
+                }
+            });
+            
+            // Handle make admin button click
+            makeAdminBtn.addEventListener('click', async function() {
+                if (!currentUser) {
+                    errorMessage.textContent = 'No user logged in. Please login first.';
+                    errorMessage.classList.remove('d-none');
+                    return;
+                }
+                
+                // Clear previous messages
+                errorMessage.classList.add('d-none');
+                successMessage.classList.add('d-none');
+                
+                try {
+                    // Show loading state
+                    makeAdminBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                    makeAdminBtn.disabled = true;
+                    
+                    // Update user metadata to set role to admin
+                    const { data, error } = await supabase.auth.updateUser({
+                        data: { role: 'admin' }
+                    });
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    // Also update the profiles table if it exists
+                    try {
+                        await supabase
+                            .from('profiles')
+                            .upsert({
+                                id: currentUser.id,
+                                email: currentUser.email,
+                                role: 'admin',
+                                updated_at: new Date()
+                            });
+                    } catch (profileError) {
+                        console.warn('Could not update profiles table:', profileError);
+                        // Continue anyway since the auth metadata is more important
+                    }
+                    
+                    // Show success message
+                    successMessage.innerHTML = `
+                        <h5><i class="fas fa-check-circle me-2"></i>Success!</h5>
+                        <p>The user <strong>${currentUser.email}</strong> has been made an administrator.</p>
+                        <p>You can now <a href="dashboard.html" class="alert-link">go to the dashboard</a> or <a href="admin-users.html" class="alert-link">manage users</a>.</p>
+                    `;
+                    successMessage.classList.remove('d-none');
+                    
+                    // Hide the make admin button
+                    makeAdminBtn.classList.add('d-none');
+                    
+                } catch (error) {
+                    console.error('Error making admin:', error);
+                    
+                    // Show error message
+                    errorMessage.textContent = `Error making admin: ${error.message}`;
+                    errorMessage.classList.remove('d-none');
+                } finally {
+                    // Reset button
+                    makeAdminBtn.innerHTML = '<i class="fas fa-user-shield me-2"></i>Make Administrator';
+                    makeAdminBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
