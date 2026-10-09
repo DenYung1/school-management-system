@@ -6,13 +6,7 @@
  */
 async function isAdmin() {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-            throw error;
-        }
-        
-        return user?.user_metadata?.role === 'admin';
+        return await getUserRole() === 'admin';
     } catch (error) {
         console.error('Error checking admin status:', error.message);
         return false;
@@ -25,13 +19,7 @@ async function isAdmin() {
  */
 async function isTeacher() {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-            throw error;
-        }
-        
-        return user?.user_metadata?.role === 'teacher';
+        return await getUserRole() === 'teacher';
     } catch (error) {
         console.error('Error checking teacher status:', error.message);
         return false;
@@ -44,13 +32,7 @@ async function isTeacher() {
  */
 async function isStudent() {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-            throw error;
-        }
-        
-        return user?.user_metadata?.role === 'student';
+        return await getUserRole() === 'student';
     } catch (error) {
         console.error('Error checking student status:', error.message);
         return false;
@@ -63,13 +45,18 @@ async function isStudent() {
  */
 async function getUserRole() {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-            throw error;
-        }
-        
-        return user?.user_metadata?.role || null;
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError) throw userError;
+        if (!user) return null;
+
+        const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError) throw profileError;
+        return profile?.role || null;
     } catch (error) {
         console.error('Error getting user role:', error.message);
         return null;

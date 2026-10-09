@@ -127,14 +127,14 @@ function initializeEnrollmentTable() {
 async function fetchCourses() {
     try {
         // Fetch courses
-        const { data: courses, error: coursesError } = await supabase
+        const { data: courses, error: coursesError } = await supabaseClient
             .from('courses')
             .select('*');
         
         if (coursesError) throw coursesError;
         
         // Fetch enrollment counts for each course
-        const { data: enrollments, error: enrollmentsError } = await supabase
+        const { data: enrollments, error: enrollmentsError } = await supabaseClient
             .from('enrollments')
             .select('course_id');
         
@@ -213,7 +213,7 @@ async function loadEnrollmentsByCourse(courseId) {
         }
         
         // Get course name for display
-        const { data: courseData, error: courseError } = await supabase
+        const { data: courseData, error: courseError } = await supabaseClient
             .from('courses')
             .select('name')
             .eq('id', courseId)
@@ -226,7 +226,7 @@ async function loadEnrollmentsByCourse(courseId) {
         const courseName = courseData ? courseData.name : 'Selected Course';
         
         // Fetch enrollments for the selected course
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('enrollments')
             .select(`
                 id,
@@ -327,7 +327,7 @@ async function loadEnrollmentsByCourse(courseId) {
 async function loadStudentsForAssignment() {
     try {
         // Fetch students
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('students')
             .select('id, name');
         
@@ -381,7 +381,7 @@ async function handleAddCourse() {
         saveBtn.disabled = true;
         
         // Insert course record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('courses')
             .insert([
                 {
@@ -427,7 +427,7 @@ async function handleAddCourse() {
 async function openEditCourseModal(courseId) {
     try {
         // Fetch course data
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('courses')
             .select('*')
             .eq('id', courseId)
@@ -482,7 +482,7 @@ async function handleUpdateCourse() {
         updateBtn.disabled = true;
         
         // Update course record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('courses')
             .update({
                 name,
@@ -533,7 +533,7 @@ function confirmDeleteCourse(courseId) {
 async function deleteCourse(courseId) {
     try {
         // Delete course record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('courses')
             .delete()
             .eq('id', courseId);
@@ -576,7 +576,7 @@ async function handleAssignStudent() {
         assignBtn.disabled = true;
         
         // Check if student is already enrolled in the course
-        const { data: existingEnrollment } = await supabase
+        const { data: existingEnrollment } = await supabaseClient
             .from('enrollments')
             .select('id')
             .eq('course_id', courseId)
@@ -588,7 +588,7 @@ async function handleAssignStudent() {
         }
         
         // Check if course has reached capacity
-        const { data: course, error: courseError } = await supabase
+        const { data: course, error: courseError } = await supabaseClient
             .from('courses')
             .select('capacity')
             .eq('id', courseId)
@@ -596,7 +596,7 @@ async function handleAssignStudent() {
         
         if (courseError) throw courseError;
         
-        const { count: currentEnrollments, error: countError } = await supabase
+        const { count: currentEnrollments, error: countError } = await supabaseClient
             .from('enrollments')
             .select('id', { count: 'exact', head: true })
             .eq('course_id', courseId);
@@ -608,7 +608,7 @@ async function handleAssignStudent() {
         }
         
         // Insert enrollment record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('enrollments')
             .insert([
                 {
@@ -669,7 +669,7 @@ async function removeEnrollment(enrollmentId) {
         const courseId = document.getElementById('courseFilterSelect').value;
         
         // Delete enrollment record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('enrollments')
             .delete()
             .eq('id', enrollmentId);
@@ -680,7 +680,7 @@ async function removeEnrollment(enrollmentId) {
         showToast('Student removed from course successfully', 'success');
         
         // Refresh enrollment table
-        loadEnrollmentsByourse(courseId);
+        loadEnrollmentsByCourse(courseId);
         
         // Refresh courses table to update enrollment count
         $('#coursesTable').DataTable().destroy();

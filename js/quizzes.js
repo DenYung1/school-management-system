@@ -55,22 +55,19 @@ async function loadQuizzes() {
         console.log('Loading quizzes...');
         
         // First, check if the quizzes table exists
-        const { error: tableCheckError } = await supabase
+        const { error: tableCheckError } = await supabaseClient
             .from('quizzes')
             .select('id')
             .limit(1);
         
-        // If the table doesn't exist, create it
+        // The quizzes table must be provisioned by the database migration.
         if (tableCheckError) {
             console.error('Error checking quizzes table:', tableCheckError);
-            console.log('The quizzes table might not exist yet. Creating sample data...');
-            
-            // Create the quizzes table with sample data
-            await createQuizzesTable();
+            throw tableCheckError;
         }
         
         // Now try to load the quizzes with a simpler query
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('quizzes')
             .select('id, title, description, course_id, created_by, created_at')
             .order('created_at', { ascending: false });
@@ -81,7 +78,7 @@ async function loadQuizzes() {
         }
 
         // Get courses for reference
-        const { data: coursesData } = await supabase
+        const { data: coursesData } = await supabaseClient
             .from('courses')
             .select('id, name');
         
@@ -133,61 +130,10 @@ async function loadQuizzes() {
     }
 }
 
-// Create quizzes table with sample data if it doesn't exist
-async function createQuizzesTable() {
-    try {
-        console.log('Creating quizzes table with sample data...');
-        
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-            console.error('No authenticated user found');
-            return;
-        }
-        
-        // Get a course to associate with the sample quiz
-        const { data: courses } = await supabase
-            .from('courses')
-            .select('id')
-            .limit(1);
-        
-        const courseId = courses && courses.length > 0 ? courses[0].id : null;
-        
-        if (!courseId) {
-            console.log('No courses found. Please create a course first.');
-            return;
-        }
-        
-        // Create a sample quiz
-        const { error } = await supabase
-            .from('quizzes')
-            .insert([
-                {
-                    title: 'Sample Quiz',
-                    description: 'This is a sample quiz to get you started.',
-                    course_id: courseId,
-                    created_by: user.id,
-                    created_at: new Date().toISOString()
-                }
-            ]);
-        
-        if (error) {
-            console.error('Error creating sample quiz:', error);
-            throw error;
-        }
-        
-        console.log('Sample quiz created successfully');
-    } catch (error) {
-        console.error('Error creating quizzes table:', error);
-        throw error;
-    }
-}
-
 // Load courses for dropdowns
 async function loadCourses() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('courses')
             .select('id, name')
             .order('name');
@@ -254,10 +200,10 @@ async function handleAddQuiz() {
         saveBtn.disabled = true;
         
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         
         // Insert quiz
-        const { data: quizData, error: quizError } = await supabase
+        const { data: quizData, error: quizError } = await supabaseClient
             .from('quizzes')
             .insert({
                 title,
@@ -278,7 +224,7 @@ async function handleAddQuiz() {
                 
                 // Upload file to storage
                 const filePath = `quizzes/${quizId}/${file.name}`;
-                const { error: storageError } = await supabase.storage
+                const { error: storageError } = await supabaseClient.storage
                     .from('quiz_files')
                     .upload(filePath, file);
                 
@@ -290,7 +236,7 @@ async function handleAddQuiz() {
                 //     .getPublicUrl(filePath);
                 
                 // Insert file record
-                const { error: fileError } = await supabase
+                const { error: fileError } = await supabaseClient
                     .from('quiz_files')
                     .insert({
                         quiz_id: quizId,
@@ -315,7 +261,7 @@ async function handleAddQuiz() {
         // Send email notifications to students enrolled in the course
         try {
             // Get students enrolled in the course
-            const { data: enrollments, error: enrollmentsError } = await supabase
+            const { data: enrollments, error: enrollmentsError } = await supabaseClient
                 .from('enrollments')
                 .select('student_id')
                 .eq('course_id', courseId);
@@ -366,7 +312,7 @@ async function handleAddQuiz() {
 // View quiz files
 async function viewQuizFiles(quizId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('quiz_files')
             .select('*')
             .eq('quiz_id', quizId);
@@ -379,7 +325,7 @@ async function viewQuizFiles(quizId) {
         if (data && data.length > 0) {
             data.forEach(file => {
                 // Get public URL
-                const { data: { publicUrl } } = supabase.storage
+                const { data: { publicUrl } } = supabaseClient.storage
                     .from('quiz_files')
                     .getPublicUrl(file.file_path);
                 
@@ -414,7 +360,7 @@ async function viewQuizFiles(quizId) {
 async function editQuiz(quizId) {
     try {
         // Get quiz data
-        const { data: quizData, error: quizError } = await supabase
+        const { data: quizData, error: quizError } = await supabaseClient
             .from('quizzes')
             .select('*')
             .eq('id', quizId)
@@ -429,7 +375,7 @@ async function editQuiz(quizId) {
         document.getElementById('editQuizDescription').value = quizData.description || '';
         
         // Load current files
-        const { data: filesData, error: filesError } = await supabase
+        const { data: filesData, error: filesError } = await supabaseClient
             .from('quiz_files')
             .select('*')
             .eq('quiz_id', quizId);
@@ -442,7 +388,7 @@ async function editQuiz(quizId) {
         if (filesData && filesData.length > 0) {
             filesData.forEach(file => {
                 // Get public URL
-                const { data: { publicUrl } } = supabase.storage
+                const { data: { publicUrl } } = supabaseClient.storage
                     .from('quiz_files')
                     .getPublicUrl(file.file_path);
                 
@@ -517,7 +463,7 @@ async function handleUpdateQuiz() {
         updateBtn.disabled = true;
         
         // Update quiz
-        const { error: quizError } = await supabase
+        const { error: quizError } = await supabaseClient
             .from('quizzes')
             .update({
                 title,
@@ -531,14 +477,14 @@ async function handleUpdateQuiz() {
         // Upload new files if any
         if (quizFiles.length > 0) {
             // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabaseClient.auth.getUser();
             
             for (let i = 0; i < quizFiles.length; i++) {
                 const file = quizFiles[i];
                 
                 // Upload file to storage
                 const filePath = `quizzes/${quizId}/${file.name}`;
-                const { error: storageError } = await supabase.storage
+                const { error: storageError } = await supabaseClient.storage
                     .from('quiz_files')
                     .upload(filePath, file);
                 
@@ -550,7 +496,7 @@ async function handleUpdateQuiz() {
                 //     .getPublicUrl(filePath);
                 
                 // Insert file record
-                const { error: fileError } = await supabase
+                const { error: fileError } = await supabaseClient
                     .from('quiz_files')
                     .insert({
                         quiz_id: quizId,
@@ -594,7 +540,7 @@ async function handleUpdateQuiz() {
 async function deleteQuizFile(fileId) {
     try {
         // Get file data first to get the file path
-        const { data, error: getError } = await supabase
+        const { data, error: getError } = await supabaseClient
             .from('quiz_files')
             .select('file_path')
             .eq('id', fileId)
@@ -603,14 +549,14 @@ async function deleteQuizFile(fileId) {
         if (getError) throw getError;
         
         // Delete from storage
-        const { error: storageError } = await supabase.storage
+        const { error: storageError } = await supabaseClient.storage
             .from('quiz_files')
             .remove([data.file_path]);
         
         if (storageError) throw storageError;
         
         // Delete from database
-        const { error: dbError } = await supabase
+        const { error: dbError } = await supabaseClient
             .from('quiz_files')
             .delete()
             .eq('id', fileId);
@@ -636,7 +582,7 @@ async function handleDeleteQuiz() {
         deleteBtn.disabled = true;
         
         // Get all files for this quiz
-        const { data: filesData, error: filesError } = await supabase
+        const { data: filesData, error: filesError } = await supabaseClient
             .from('quiz_files')
             .select('file_path')
             .eq('quiz_id', quizId);
@@ -647,7 +593,7 @@ async function handleDeleteQuiz() {
         if (filesData && filesData.length > 0) {
             const filePaths = filesData.map(file => file.file_path);
             
-            const { error: storageError } = await supabase.storage
+            const { error: storageError } = await supabaseClient.storage
                 .from('quiz_files')
                 .remove(filePaths);
             
@@ -655,7 +601,7 @@ async function handleDeleteQuiz() {
         }
         
         // Delete quiz (this will cascade delete the quiz_files records)
-        const { error: quizError } = await supabase
+        const { error: quizError } = await supabaseClient
             .from('quizzes')
             .delete()
             .eq('id', quizId);

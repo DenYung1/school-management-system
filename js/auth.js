@@ -4,15 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user is logged in
     checkAuthState();
 
-    // Initialize sidebar toggle
-    const sidebarToggle = document.getElementById('menu-toggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.body.classList.toggle('sb-sidenav-toggled');
-        });
-    }
-    
     // Initialize Google login button
     const googleLoginBtn = document.getElementById('googleLoginBtn');
     if (googleLoginBtn) {
@@ -85,12 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
 async function checkAuthState() {
     try {
         // First check if there's a session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
         
         if (sessionError) {
             console.error('Session error:', sessionError.message);
             // Clear any invalid session data
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             throw sessionError;
         }
         
@@ -101,7 +92,7 @@ async function checkAuthState() {
         }
         
         // If we have a session, get the user
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
         
         if (error) {
             throw error;
@@ -166,7 +157,7 @@ async function handleLogin(e) {
         console.log('Attempting to sign in with:', email);
         
         // Sign in with Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -218,7 +209,7 @@ async function handleLogout(e) {
     e.preventDefault();
     
     try {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabaseClient.auth.signOut();
         
         if (error) {
             throw error;
@@ -247,7 +238,7 @@ async function handleGoogleLogin() {
         }
         
         // Sign in with Google using Supabase Auth
-        const { data: _data, error } = await supabase.auth.signInWithOAuth({
+        const { data: _data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: window.location.origin + '/dashboard.html',
@@ -292,7 +283,7 @@ async function handleForgotPassword(e) {
     }
     
     try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin + '/reset-password.html',
         });
         
@@ -323,13 +314,19 @@ function updateUserInfo(user) {
 // Check if the current user has admin privileges
 async function isAdmin() {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
-        if (error) {
-            throw error;
-        }
+        if (userError) throw userError;
+        if (!user) return false;
+
+        const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
         
-        return user?.user_metadata?.role === 'admin';
+        if (profileError) throw profileError;
+        return profile?.role === 'admin';
     } catch (error) {
         console.error('Error checking admin status:', error.message);
         return false;
@@ -392,27 +389,6 @@ async function handleRegistration(e) {
         return;
     }
     
-    // Check if this is the first user (who will be an admin)
-    // We'll do this by checking if there are any existing users
-    let secureRole = 'student'; // Default role
-    
-    try {
-        const { count, error } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true });
-            
-        if (error) throw error;
-        
-        // If there are no users yet, make this user an admin
-        if (count === 0) {
-            secureRole = 'admin';
-            console.log('First user detected - assigning admin role');
-        }
-    } catch (err) {
-        console.error('Error checking if first user:', err);
-        // Continue with student role if there's an error
-    }
-    
     if (password.length < 6) {
         registerError.textContent = 'Password must be at least 6 characters long';
         registerError.classList.remove('d-none');
@@ -432,13 +408,13 @@ async function handleRegistration(e) {
         submitBtn.disabled = true;
         
         // Register user with Supabase
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
-                    role: secureRole // Always use the secure role (student) for new registrations
+                    role: 'student'
                 }
             }
         });
@@ -496,7 +472,7 @@ async function storeOAuthProviderInfo(user) {
         }
         
         // Check if provider record already exists
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('oauth_providers')
             .select('*')
             .eq('user_id', user.id)
@@ -509,7 +485,7 @@ async function storeOAuthProviderInfo(user) {
         
         // If record doesn't exist, create it
         if (!data) {
-            const { error: insertError } = await supabase
+            const { error: insertError } = await supabaseClient
                 .from('oauth_providers')
                 .insert({
                     user_id: user.id,

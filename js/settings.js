@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadNotificationSettings() {
     try {
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
         if (userError) throw userError;
         
@@ -38,7 +38,7 @@ async function loadNotificationSettings() {
         }
         
         // Get notification settings
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('email_notifications')
             .select('*')
             .eq('user_id', user.id);
@@ -71,7 +71,7 @@ async function createDefaultNotificationSettings(userId) {
         
         // Create settings for each notification type
         for (const type of notificationTypes) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('email_notifications')
                 .insert({
                     user_id: userId,
@@ -98,7 +98,7 @@ async function handleSaveNotificationSettings(e) {
     
     try {
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
         if (userError) throw userError;
         
@@ -120,7 +120,7 @@ async function handleSaveNotificationSettings(e) {
         ];
         
         for (const { type, enabled } of notificationTypes) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('email_notifications')
                 .upsert({
                     user_id: user.id,
@@ -145,7 +145,7 @@ async function handleSaveNotificationSettings(e) {
 async function loadConnectedAccounts() {
     try {
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
         if (userError) throw userError;
         
@@ -155,7 +155,7 @@ async function loadConnectedAccounts() {
         }
         
         // Check if user has connected Google account
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('oauth_providers')
             .select('*')
             .eq('user_id', user.id)
@@ -211,8 +211,8 @@ async function handleConnectGoogle() {
         connectBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
         connectBtn.disabled = true;
         
-        // Sign in with Google
-        const { data: _data, error } = await supabase.auth.signInWithOAuth({
+        // Link Google to the currently authenticated account.
+        const { error } = await supabaseClient.auth.linkIdentity({
             provider: 'google',
             options: {
                 redirectTo: window.location.origin + '/settings.html',
@@ -246,12 +246,12 @@ async function handleDisconnectGoogle() {
         disconnectBtn.disabled = true;
         
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
         if (userError) throw userError;
         
         // Delete OAuth provider record
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('oauth_providers')
             .delete()
             .eq('user_id', user.id)

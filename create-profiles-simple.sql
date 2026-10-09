@@ -1,4 +1,8 @@
--- Simple script to create the profiles table for the NIIT School Management System
+-- Deprecated: use supabase-schema-fixed.sql followed by db/fix-role-permissions.sql.
+-- This file is retained for reference and must not be run because its policies
+-- allow unsafe role changes and conflict with the canonical profiles schema.
+
+/*
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
@@ -44,3 +48,4 @@ ON CONFLICT (id) DO NOTHING;
 UPDATE profiles 
 SET role = 'admin' 
 WHERE email = 'your-email@example.com';
+*/

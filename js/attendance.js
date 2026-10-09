@@ -96,7 +96,7 @@ function initializeAttendanceRecordsTable() {
 async function fetchAttendanceRecords() {
     try {
         // Join attendance with courses and students to get names
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('attendance')
             .select(`
                 id,
@@ -130,7 +130,7 @@ async function loadCoursesForDropdowns() {
         console.log('Loading courses for dropdowns...');
         
         // Fetch courses
-        const { data: courses, error } = await supabase
+        const { data: courses, error } = await supabaseClient
             .from('courses')
             .select('id, name');
         
@@ -212,7 +212,7 @@ async function loadCoursesForDropdowns() {
 async function loadStudentsForFilter() {
     try {
         // Fetch students
-        const { data: students, error } = await supabase
+        const { data: students, error } = await supabaseClient
             .from('students')
             .select('id, name')
             .order('name');
@@ -264,7 +264,7 @@ async function handleLoadStudentsForAttendance(e) {
         dateBadge.textContent = formatDate(date);
         
         // Fetch students enrolled in the course
-        const { data: enrollments, error: enrollmentsError } = await supabase
+        const { data: enrollments, error: enrollmentsError } = await supabaseClient
             .from('enrollments')
             .select(`
                 student_id,
@@ -283,7 +283,7 @@ async function handleLoadStudentsForAttendance(e) {
         }
         
         // Fetch existing attendance records for the date and course
-        const { data: existingAttendance, error: attendanceError } = await supabase
+        const { data: existingAttendance, error: attendanceError } = await supabaseClient
             .from('attendance')
             .select('student_id, status, notes')
             .eq('date', date)
@@ -369,19 +369,11 @@ async function handleSaveAttendance() {
             });
         });
         
-        // Delete existing attendance records for the date and course
-        const { error: deleteError } = await supabase
+        // Replace records by their unique date/course/student key without deleting
+        // the existing attendance set first.
+        const { data: _savedRecords, error } = await supabaseClient
             .from('attendance')
-            .delete()
-            .eq('date', date)
-            .eq('course_id', courseId);
-        
-        if (deleteError) throw deleteError;
-        
-        // Insert new attendance records
-        const { data: _insertedRecords, error } = await supabase
-            .from('attendance')
-            .insert(attendanceRecords)
+            .upsert(attendanceRecords, { onConflict: 'date,course_id,student_id' })
             .select();
         
         if (error) throw error;
@@ -415,7 +407,7 @@ async function handleSaveAttendance() {
 async function openEditAttendanceModal(attendanceId) {
     try {
         // Fetch attendance record
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('attendance')
             .select(`
                 id,
@@ -484,7 +476,7 @@ async function handleUpdateAttendance() {
         updateBtn.disabled = true;
         
         // Update attendance record
-        const { data: _, error } = await supabase
+        const { data: _, error } = await supabaseClient
             .from('attendance')
             .update({
                 status,

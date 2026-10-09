@@ -1,4 +1,8 @@
--- Create profiles table for user role management
+-- Deprecated: use ../supabase-schema-fixed.sql followed by db/fix-role-permissions.sql.
+-- This file is retained for reference and must not be run because it drops data,
+-- creates duplicate triggers, and contains recursive role policies.
+
+/*
 -- First, drop the table if it exists to avoid conflicts
 DROP TABLE IF EXISTS profiles CASCADE;
 
@@ -103,3 +107,4 @@ BEGIN
         RAISE NOTICE 'Error migrating existing users: %', SQLERRM;
     END;
 END $$;
+*/

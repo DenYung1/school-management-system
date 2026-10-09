@@ -23,15 +23,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Set up proper focus management for modals
     setupModalAccessibility();
 
-    // Initialize sidebar toggle
-    const sidebarToggle = document.getElementById('menu-toggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            document.body.classList.toggle('sb-sidenav-toggled');
-        });
-    }
-
     // Initialize logout buttons
     const logoutBtn = document.getElementById('logoutBtn');
     const navLogoutBtn = document.getElementById('navLogoutBtn');
@@ -98,11 +89,9 @@ async function loadUsers() {
         // Get all users from the profiles table
         console.log('Querying profiles table...');
         
-        // Filter out users whose names start with [DELETED] since we don't have an is_deleted column
-        const { data: users, error } = await supabase
+        const { data: users, error } = await supabaseClient
             .from('profiles')
-            .select('id, full_name, email, role, last_sign_in_at, created_at')
-            .not('full_name', 'like', '[DELETED]%')
+            .select('id, full_name, role, created_at')
             .order('created_at', { ascending: false });
         
         console.log('Query result:', { users, error });
@@ -145,9 +134,9 @@ async function loadUsers() {
             users.forEach(user => {
                 const row = [
                     user.full_name || 'N/A',
-                    user.email || 'N/A',
+                    'Managed in Supabase Auth',
                     capitalizeFirstLetter(user.role) || 'Student',
-                    formatDate(user.last_sign_in_at) || 'Never',
+                    formatDate(user.created_at) || 'Unknown',
                     `<div class="btn-group">
                         <button class="btn btn-sm btn-primary change-role-btn me-1" data-id="${user.id}" data-name="${user.full_name}" data-email="${user.email}" data-role="${user.role}">
                             <i class="fas fa-user-edit"></i> Change Role
@@ -192,7 +181,7 @@ async function handleRoleChange() {
         const newRole = document.getElementById('userRole').value;
         
         // Update user role in the profiles table
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
             .from('profiles')
             .update({ role: newRole })
             .eq('id', userId);
@@ -306,24 +295,14 @@ async function handleDeleteUser() {
         console.log('Deleting user with ID:', userId);
         
         // Now that we have delete permission, we can directly delete the user
-        console.log('Deleting user profile directly...');
-        
-        // Delete the user from the profiles table
-        const { error: deleteError } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
-        
+        const { error: deleteError } = await supabaseClient.functions.invoke('delete-user', {
+            body: { userId }
+        });
+
         if (deleteError) {
-            console.error('Error deleting profile:', deleteError);
-            throw new Error(`Could not delete user profile: ${deleteError.message}`);
+            console.error('Error deleting user:', deleteError);
+            throw new Error(`Could not delete user: ${deleteError.message}`);
         }
-        
-        console.log('User successfully deleted from profiles table');
-        
-        // Note: We're not attempting to delete from the auth system since we don't have admin privileges
-        // This is okay - the user will still be effectively removed from the UI with our soft delete approach
-        console.log('Skipping auth deletion - requires admin privileges');
         
         // Show success message
         const successMsg = document.getElementById('userManagementSuccess');
@@ -343,7 +322,7 @@ async function handleDeleteUser() {
         try {
             // Get fresh data from the database
             // Filter out users whose names start with [DELETED] since we don't have an is_deleted column
-            const { data: freshUsers, error: fetchError } = await supabase
+            const { data: freshUsers, error: fetchError } = await supabaseClient
                 .from('profiles')
                 .select('id, full_name, email, role, last_sign_in_at, created_at')
                 .not('full_name', 'like', '[DELETED]%')
@@ -515,7 +494,7 @@ async function handleAddUser() {
         
         // Skip admin API and use regular signup directly
         console.log('Creating user with regular signup...');
-        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+        const { data: signupData, error: signupError } = await supabaseClient.auth.signUp({
             email,
             password,
             options: {

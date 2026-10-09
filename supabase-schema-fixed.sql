@@ -68,7 +68,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, role)
-  VALUES (new.id, new.raw_user_meta_data->>'full_name', COALESCE(new.raw_user_meta_data->>'role', 'student'));
+  VALUES (new.id, new.raw_user_meta_data->>'full_name', 'student');
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
@@ -196,17 +196,17 @@ CREATE POLICY "Students are viewable by authenticated users." ON public.students
 
 CREATE POLICY "Admins can insert students." ON public.students
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can update students." ON public.students
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can delete students." ON public.students
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   ));
 
 -- Courses policies
@@ -227,7 +227,7 @@ CREATE POLICY "Admins and teachers can update courses." ON public.courses
 
 CREATE POLICY "Admins can delete courses." ON public.courses
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   ));
 
 -- Quizzes policies
@@ -236,17 +236,17 @@ CREATE POLICY "Quizzes are viewable by authenticated users." ON public.quizzes
 
 CREATE POLICY "Teachers and admins can insert quizzes." ON public.quizzes
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Teachers and admins can update quizzes." ON public.quizzes
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Teachers and admins can delete quizzes." ON public.quizzes
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 -- Quiz files policies
@@ -255,17 +255,17 @@ CREATE POLICY "Quiz files are viewable by authenticated users." ON public.quiz_f
 
 CREATE POLICY "Teachers and admins can insert quiz files." ON public.quiz_files
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Teachers and admins can update quiz files." ON public.quiz_files
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Teachers and admins can delete quiz files." ON public.quiz_files
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 -- Email notifications policies
@@ -296,17 +296,17 @@ CREATE POLICY "Users can delete their own OAuth providers." ON public.oauth_prov
 
 CREATE POLICY "Admins can insert courses." ON public.courses
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can update courses." ON public.courses
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can delete courses." ON public.courses
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   ));
 
 -- Enrollments policies
@@ -315,17 +315,17 @@ CREATE POLICY "Enrollments are viewable by authenticated users." ON public.enrol
 
 CREATE POLICY "Admins can insert enrollments." ON public.enrollments
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can update enrollments." ON public.enrollments
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can delete enrollments." ON public.enrollments
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 -- Attendance policies
@@ -334,15 +334,15 @@ CREATE POLICY "Attendance records are viewable by authenticated users." ON publi
 
 CREATE POLICY "Admins can insert attendance records." ON public.attendance
   FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can update attendance records." ON public.attendance
   FOR UPDATE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));
 
 CREATE POLICY "Admins can delete attendance records." ON public.attendance
   FOR DELETE USING (auth.role() = 'authenticated' AND (
-    auth.jwt() ->> 'role' = 'admin' OR auth.jwt() ->> 'role' = 'teacher'
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
   ));

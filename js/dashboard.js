@@ -49,18 +49,8 @@ async function fetchDashboardStats() {
     try {
         console.log('Fetching dashboard statistics...');
         
-        // Try to clear cache for students table
-        try {
-            await supabase.rest.cache.purgeCache({
-                table: 'students'
-            });
-            console.log('Cache purged for students table');
-        } catch (cacheError) {
-            console.warn('Cache purge not supported or failed:', cacheError);
-        }
-        
         // Fetch all students to filter deleted ones
-        const { data: studentsData, error: studentsError } = await supabase
+        const { data: studentsData, error: studentsError } = await supabaseClient
             .from('students')
             .select('id');
         
@@ -81,7 +71,7 @@ async function fetchDashboardStats() {
         console.log('Filtered students count:', studentsCount);
         
         // Fetch total courses count
-        const { count: coursesCount, error: coursesError } = await supabase
+        const { count: coursesCount, error: coursesError } = await supabaseClient
             .from('courses')
             .select('*', { count: 'exact', head: true })
             .limit(1);
@@ -96,7 +86,7 @@ async function fetchDashboardStats() {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const thirtyDaysAgoIso = thirtyDaysAgo.toISOString();
         
-        const { data: attendanceData, error: attendanceError } = await supabase
+        const { data: attendanceData, error: attendanceError } = await supabaseClient
             .from('attendance')
             .select('status')
             .gte('date', thirtyDaysAgoIso);
@@ -118,7 +108,7 @@ async function fetchDashboardStats() {
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const sevenDaysAgoIso = sevenDaysAgo.toISOString();
         
-        const { data: newRegistrationsData, error: regError } = await supabase
+        const { data: newRegistrationsData, error: regError } = await supabaseClient
             .from('students')
             .select('id')
             .gte('created_at', sevenDaysAgoIso);
@@ -157,21 +147,12 @@ async function fetchRecentRegistrations() {
     try {
         console.log('Fetching recent student registrations...');
         
-        // Try to clear cache for students table
-        try {
-            await supabase.rest.cache.purgeCache({
-                table: 'students'
-            });
-        } catch (cacheError) {
-            console.warn('Cache purge not supported or failed:', cacheError);
-        }
-        
         // Show loading indicator
         const tableBody = document.getElementById('recentRegistrationsTable');
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading...</td></tr>';
         
         // Fetch recent registrations with cache busting
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('students')
             .select('id, name, email, program, created_at')
             .order('created_at', { ascending: false })
@@ -233,7 +214,7 @@ async function loadAttendanceSummary() {
         startDate.setDate(startDate.getDate() - 6); // Last 7 days including today
         
         // Fetch attendance data
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('attendance')
             .select('status')
             .gte('date', startDate.toISOString())
@@ -305,14 +286,14 @@ async function loadCourseEnrollmentTable() {
         tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Loading...</td></tr>';
         
         // Fetch courses
-        const { data: courses, error: coursesError } = await supabase
+        const { data: courses, error: coursesError } = await supabaseClient
             .from('courses')
             .select('id, name');
         
         if (coursesError) throw coursesError;
         
         // Fetch enrollments
-        const { data: enrollments, error: enrollmentsError } = await supabase
+        const { data: enrollments, error: enrollmentsError } = await supabaseClient
             .from('enrollments')
             .select('course_id');
         

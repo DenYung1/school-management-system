@@ -1,12 +1,12 @@
 // Supabase Configuration
-const SUPABASE_URL = 'https://eynpdommgdlczzibjkqv.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://eynpdommgdlczzibjkqv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5bnBkb21tZ2RsY3p6aWJqa3F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0MzczNjMsImV4cCI6MjEwNjAxMzM2M30.pPLgEtaHrlV7MihUH_5F0xPV5WuyQLtkIcOJDp5TaYA';
 
 // Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Export the supabase client for use in other files
-window.supabaseClient = supabase;
+window.supabaseClient = supabaseClient;
 
 // Global app configuration
 const appConfig = {

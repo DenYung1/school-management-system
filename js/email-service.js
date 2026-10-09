@@ -3,7 +3,7 @@
 // Check if a user has enabled notifications for a specific type
 async function isNotificationEnabled(userId, notificationType) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('email_notifications')
             .select('enabled')
             .eq('user_id', userId)
@@ -26,7 +26,7 @@ async function isNotificationEnabled(userId, notificationType) {
 async function sendAttendanceNotification(studentId, courseId, date, status) {
     try {
         // Get student details
-        const { data: studentData, error: studentError } = await supabase
+        const { data: studentData, error: studentError } = await supabaseClient
             .from('students')
             .select('name, email')
             .eq('id', studentId)
@@ -35,7 +35,7 @@ async function sendAttendanceNotification(studentId, courseId, date, status) {
         if (studentError) throw studentError;
         
         // Get course details
-        const { data: courseData, error: courseError } = await supabase
+        const { data: courseData, error: courseError } = await supabaseClient
             .from('courses')
             .select('name')
             .eq('id', courseId)
@@ -86,7 +86,7 @@ async function sendAttendanceNotification(studentId, courseId, date, status) {
 async function sendQuizNotification(studentIds, quizId) {
     try {
         // Get quiz details
-        const { data: quizData, error: quizError } = await supabase
+        const { data: quizData, error: quizError } = await supabaseClient
             .from('quizzes')
             .select(`
                 title,
@@ -99,7 +99,7 @@ async function sendQuizNotification(studentIds, quizId) {
         if (quizError) throw quizError;
         
         // Get student details
-        const { data: studentsData, error: studentsError } = await supabase
+        const { data: studentsData, error: studentsError } = await supabaseClient
             .from('students')
             .select('id, name, email')
             .in('id', studentIds);

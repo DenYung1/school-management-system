@@ -87,7 +87,7 @@ async function fetchStudents() {
         console.log('Fetching students data...');
         
         // Join students with courses to get course names
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('students')
             .select(`
                 id,
@@ -137,7 +137,7 @@ async function loadProgramsAndCourses() {
         const programs = ['Computer Science', 'Information Technology', 'Software Engineering', 'Cybersecurity', 'Data Science', 'Networking'];
         
         // Fetch courses
-        const { data: courses, error: coursesError } = await supabase
+        const { data: courses, error: coursesError } = await supabaseClient
             .from('courses')
             .select('id, name');
         
@@ -211,7 +211,7 @@ async function handleAddStudent() {
         saveBtn.disabled = true;
         
         // Insert student record
-        const { data: _data, error } = await supabase
+        const { data: _data, error } = await supabaseClient
             .from('students')
             .insert([
                 {
@@ -258,7 +258,7 @@ async function handleAddStudent() {
 async function openEditStudentModal(studentId) {
     try {
         // Fetch student data
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('students')
             .select('*')
             .eq('id', studentId)
@@ -321,7 +321,7 @@ async function handleUpdateStudent() {
         updateBtn.disabled = true;
         
         // Update student record
-        const { data: _data, error } = await supabase
+        const { data: _data, error } = await supabaseClient
             .from('students')
             .update({
                 name,
@@ -382,7 +382,7 @@ async function deleteStudent(studentId) {
         showToast('Deleting student...', 'info');
         
         // Get student info before deletion for reference
-        const { data: studentData, error: studentError } = await supabase
+        const { data: studentData, error: studentError } = await supabaseClient
             .from('students')
             .select('id, name, email')
             .eq('id', studentId)
@@ -400,54 +400,12 @@ async function deleteStudent(studentId) {
         const studentName = studentData.name;
         console.log(`Found student to delete: ${studentName} (${studentData.email})`);
         
-        // IMPORTANT: Mark the student as deleted in localStorage first
-        // This ensures the student will be filtered out even if database deletion fails
-        if (window.markStudentAsDeleted) {
-            window.markStudentAsDeleted(studentId);
-            console.log('Student marked as deleted in localStorage');
-        }
-        
-        // Try database deletion (but we don't actually care if it succeeds now)
-        let databaseDeletionSuccessful = false;
-        
-        // Try standard delete
-        try {
-            console.log('Attempting database deletion');
-            const { error: deleteError } = await supabase
-                .from('students')
-                .delete()
-                .eq('id', studentId);
-                
-            if (!deleteError) {
-                console.log('Database deletion succeeded');
-                databaseDeletionSuccessful = true;
-            } else {
-                console.warn('Database deletion failed:', deleteError);
-            }
-        } catch (err) {
-            console.warn('Database deletion exception:', err);
-        }
-        
-        // If database deletion failed, try to update the record to mark it as deleted
-        if (!databaseDeletionSuccessful) {
-            try {
-                console.log('Attempting to mark record as deleted in database');
-                await supabase
-                    .from('students')
-                    .update({
-                        name: `DELETED-${Date.now()}-${studentName}`,
-                        email: `deleted-${Date.now()}@deleted.com`,
-                        program: 'DELETED',
-                        course_id: null
-                    })
-                    .eq('id', studentId);
-                    
-                console.log('Record marked as deleted in database');
-            } catch (err) {
-                console.warn('Failed to mark record as deleted in database:', err);
-                // We don't care if this fails since we already marked it in localStorage
-            }
-        }
+        const { error: deleteError } = await supabaseClient
+            .from('students')
+            .delete()
+            .eq('id', studentId);
+
+        if (deleteError) throw deleteError;
         
         // Remove the student from the DataTable immediately
         const table = $('#studentsTable').DataTable();
@@ -465,7 +423,7 @@ async function deleteStudent(studentId) {
             }
         }
         
-        // Show success message
+        // Show success message only after the database confirms deletion.
         showToast(`Student ${studentName} deleted successfully`, 'success');
         
         // Force a complete page reload to ensure all data is fresh

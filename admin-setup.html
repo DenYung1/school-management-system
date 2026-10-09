@@ -22,8 +22,8 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            This tool allows you to set up an administrator account for your School Management System.
-                            <strong>Use this tool only once during initial setup.</strong>
+                            Administrator roles must be assigned by a trusted operator in Supabase.
+                            <strong>Do not use the browser to promote an account.</strong>
                         </div>
 
                         <div id="loginSection">
@@ -42,12 +42,12 @@
                         </div>
 
                         <div id="adminSetupSection" class="d-none">
-                            <h4 class="mb-4">Step 2: Make this account an administrator</h4>
+                            <h4 class="mb-4">Step 2: Confirm your account</h4>
                             <div class="mb-3">
                                 <p><strong>User:</strong> <span id="userEmail"></span></p>
                             </div>
                             <button id="makeAdminBtn" class="btn btn-success">
-                                <i class="fas fa-user-shield me-2"></i>Make Administrator
+                                <i class="fas fa-user-shield me-2"></i>Check Administrator Status
                             </button>
                         </div>
 
@@ -133,7 +133,7 @@
                 }
             });
             
-            // Handle make admin button click
+            // Confirm the role assigned by the trusted Supabase bootstrap query.
             makeAdminBtn.addEventListener('click', async function() {
                 if (!currentUser) {
                     errorMessage.textContent = 'No user logged in. Please login first.';
@@ -146,54 +146,26 @@
                 successMessage.classList.add('d-none');
                 
                 try {
-                    // Show loading state
-                    makeAdminBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-                    makeAdminBtn.disabled = true;
-                    
-                    // Update user metadata to set role to admin
-                    const { data, error } = await supabase.auth.updateUser({
-                        data: { role: 'admin' }
-                    });
-                    
-                    if (error) {
-                        throw error;
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', currentUser.id)
+                        .single();
+
+                    if (error) throw error;
+
+                    if (profile.role !== 'admin') {
+                        throw new Error('This account is not an administrator. Run db/bootstrap-admin.sql in Supabase with an approved administrator email.');
                     }
-                    
-                    // Also update the profiles table if it exists
-                    try {
-                        await supabase
-                            .from('profiles')
-                            .upsert({
-                                id: currentUser.id,
-                                email: currentUser.email,
-                                role: 'admin',
-                                updated_at: new Date()
-                            });
-                    } catch (profileError) {
-                        console.warn('Could not update profiles table:', profileError);
-                        // Continue anyway since the auth metadata is more important
-                    }
-                    
-                    // Show success message
-                    successMessage.innerHTML = `
-                        <h5><i class="fas fa-check-circle me-2"></i>Success!</h5>
-                        <p>The user <strong>${currentUser.email}</strong> has been made an administrator.</p>
-                        <p>You can now <a href="dashboard.html" class="alert-link">go to the dashboard</a> or <a href="admin-users.html" class="alert-link">manage users</a>.</p>
-                    `;
+
+                    successMessage.innerHTML = '<h5><i class="fas fa-check-circle me-2"></i>Administrator confirmed.</h5><p><a href="dashboard.html" class="alert-link">Go to the dashboard</a>.</p>';
                     successMessage.classList.remove('d-none');
-                    
-                    // Hide the make admin button
                     makeAdminBtn.classList.add('d-none');
-                    
                 } catch (error) {
-                    console.error('Error making admin:', error);
-                    
-                    // Show error message
-                    errorMessage.textContent = `Error making admin: ${error.message}`;
+                    console.error('Error checking admin status:', error);
+                    errorMessage.textContent = error.message;
                     errorMessage.classList.remove('d-none');
                 } finally {
-                    // Reset button
-                    makeAdminBtn.innerHTML = '<i class="fas fa-user-shield me-2"></i>Make Administrator';
                     makeAdminBtn.disabled = false;
                 }
             });
